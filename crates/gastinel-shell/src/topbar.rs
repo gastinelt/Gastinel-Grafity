@@ -1,6 +1,8 @@
-//! Embedded TopBar / Status bar for Gastinel Desktop.
+//! Embedded TopBar / Status bar for Gastinel Desktop styled with Inter DA.
 
+use gastinel_core::font::{FontWeight, GlyphInstance, InterAtlas};
 use gastinel_core::geom::{Point, Rect};
+use gastinel_core::render::{QuadInstance, RenderQueue};
 
 pub struct TopBar {
     pub bounds: Rect,
@@ -13,7 +15,7 @@ pub struct TopBar {
 }
 
 impl TopBar {
-    pub const DEFAULT_HEIGHT: u32 = 32;
+    pub const DEFAULT_HEIGHT: u32 = 34;
 
     pub fn new(screen_width: u32) -> Self {
         Self {
@@ -21,8 +23,8 @@ impl TopBar {
             height: Self::DEFAULT_HEIGHT,
             active_workspace: 1,
             workspace_count: 5,
-            current_time_str: String::from("00:00"),
-            ram_used_mb: 0,
+            current_time_str: String::from("12:00"),
+            ram_used_mb: 85,
             ram_total_mb: 8192,
         }
     }
@@ -45,25 +47,93 @@ impl TopBar {
         self.active_workspace = ws;
     }
 
-    /// Hit-test: checks if a point clicks on a workspace button (returns Some(workspace_id))
-    pub fn hit_test_workspace(&self, p: Point) -> Option<u32> {
-        if !self.bounds.contains(p) {
-            return None;
-        }
+    /// Generates draw primitives (quads & Inter text) into the frame render queue.
+    pub fn render(
+        &self,
+        atlas: &InterAtlas,
+        queue: &mut RenderQueue,
+        glyphs: &mut Vec<GlyphInstance>,
+    ) {
+        // 1. TopBar translucent background (acrylic dark)
+        let bar_bg = QuadInstance::rounded_box(
+            self.bounds,
+            0.0,
+            [0.08, 0.09, 0.11, 0.88], // Dark frosted acrylic
+            [0.20, 0.22, 0.26, 0.60], // Subtle bottom border
+            1.0,
+            0.1,
+        );
+        queue.push(bar_bg);
 
-        // Workspace buttons on the left
-        let start_x = 10;
-        let btn_width = 30;
+        // 2. Workspace indicators (pills)
+        let start_x = 12;
+        let pill_w = 32;
+        let pill_h = self.height - 10;
         let spacing = 6;
 
         for i in 1..=self.workspace_count {
-            let x = start_x + ((i - 1) as i32) * (btn_width + spacing);
-            let rect = Rect::new(x, 4, btn_width as u32, self.height - 8);
-            if rect.contains(p) {
-                return Some(i);
-            }
+            let x = start_x + ((i - 1) as i32) * (pill_w + spacing);
+            let pill_rect = Rect::new(x, 5, pill_w as u32, pill_h);
+
+            let is_active = i == self.active_workspace;
+            let (fill, border, text_color) = if is_active {
+                // Electric blue accent
+                (
+                    [0.22, 0.47, 0.94, 0.95],
+                    [0.40, 0.65, 1.00, 0.80],
+                    [1.0, 1.0, 1.0, 1.0],
+                )
+            } else {
+                // Dim pill
+                (
+                    [0.14, 0.15, 0.18, 0.70],
+                    [0.22, 0.24, 0.28, 0.50],
+                    [0.65, 0.68, 0.75, 1.0],
+                )
+            };
+
+            queue.push(QuadInstance::rounded_box(
+                pill_rect,
+                6.0,
+                fill,
+                border,
+                1.0,
+                0.2,
+            ));
+
+            // Inter text for workspace number
+            let num_str = i.to_string();
+            atlas.layout_text(
+                &num_str,
+                Point::new(x + 12, 22),
+                12,
+                if is_active { FontWeight::Bold } else { FontWeight::Medium },
+                text_color,
+                glyphs,
+            );
         }
 
-        None
+        // 3. Center Clock (Inter SemiBold 13px)
+        let clock_x = (self.bounds.width as i32 / 2) - 20;
+        atlas.layout_text(
+            &self.current_time_str,
+            Point::new(clock_x, 22),
+            13,
+            FontWeight::SemiBold,
+            [0.95, 0.96, 0.98, 1.0],
+            glyphs,
+        );
+
+        // 4. Right: RAM & System Monitor stats
+        let ram_text = format!("RAM: {}MB / {}MB", self.ram_used_mb, self.ram_total_mb);
+        let ram_x = self.bounds.width as i32 - 160;
+        atlas.layout_text(
+            &ram_text,
+            Point::new(ram_x, 22),
+            12,
+            FontWeight::Regular,
+            [0.55, 0.85, 0.65, 1.0], // Soft green for healthy ultralow RAM
+            glyphs,
+        );
     }
 }
