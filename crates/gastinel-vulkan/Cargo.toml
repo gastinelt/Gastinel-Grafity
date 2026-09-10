@@ -1,0 +1,9 @@
+[package]
+name = "gastinel-vulkan"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+gastinel-core = { path = "../gastinel-core" }
+gastinel-simd = { path = "../gastinel-simd" }

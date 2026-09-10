@@ -1,0 +1,12 @@
+[package]
+name = "gastinel-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+gastinel-core = { path = "../crates/gastinel-core" }
+gastinel-simd = { path = "../crates/gastinel-simd" }
+gastinel-vulkan = { path = "../crates/gastinel-vulkan" }
+gastinel-shell = { path = "../crates/gastinel-shell" }
+gastinel-platform = { path = "../crates/gastinel-platform" }
