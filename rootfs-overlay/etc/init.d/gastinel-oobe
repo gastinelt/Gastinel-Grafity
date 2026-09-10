@@ -1,0 +1,31 @@
+#!/sbin/openrc-run
+# OpenRC first-boot Setup Wizard (OOBE) for Gastinel Alpine
+
+description="Gastinel First-Boot Setup Wizard"
+command="/usr/bin/gastinel-desktop"
+command_args="--setup-wizard"
+
+depend() {
+    need udev seatd localmount
+    after networking
+}
+
+start() {
+    ebegin "Starting Gastinel Graphical Setup Wizard"
+    
+    # Launch setup wizard directly on frame buffer / DRM
+    /usr/bin/gastinel-desktop --setup-wizard
+    
+    local status=$?
+    if [ $status -eq 0 ]; then
+        # Setup completed successfully: switch to regular desktop
+        rc-update del gastinel-oobe default
+        rc-update add gastinel default
+        einfo "Gastinel Setup finished! Launching desktop session..."
+        rc-service gastinel start
+    else
+        eerror "Setup wizard exited with code $status"
+    fi
+    
+    eend $status
+}

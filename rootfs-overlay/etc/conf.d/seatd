@@ -1,0 +1,2 @@
+# Options for seatd OpenRC service
+SEATD_OPTS="-g seat"

@@ -1,0 +1,22 @@
+#!/bin/sh
+# /usr/bin/gastinel-session
+# Session bootstrap script for Gastinel Desktop
+
+# 1. Setup XDG runtime directory if missing
+if [ -z "$XDG_RUNTIME_DIR" ]; then
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+        mkdir -p "$XDG_RUNTIME_DIR"
+        chmod 0700 "$XDG_RUNTIME_DIR"
+    fi
+fi
+
+# 2. Check if first boot setup wizard is required
+if [ ! -f /etc/gastinel/installed.lock ]; then
+    echo "[GASTINEL] First boot detected -> Launching Setup Wizard..."
+    exec /usr/bin/gastinel-desktop --setup-wizard
+fi
+
+# 3. Launch regular desktop session
+echo "[GASTINEL] Launching Desktop..."
+exec /usr/bin/gastinel-desktop

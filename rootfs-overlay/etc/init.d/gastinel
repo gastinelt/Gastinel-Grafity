@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+# OpenRC service script for Gastinel Desktop
+
+description="Gastinel Wayland Desktop Environment"
+supervisor="supervise-daemon"
+command="/usr/bin/gastinel-desktop"
+command_user="theog:seat"
+
+depend() {
+    need udev seatd localmount
+    after networking
+    provide display-manager
+}
+
+start_pre() {
+    # Ensure seatd socket is accessible
+    if [ ! -S /run/seatd.sock ]; then
+        eerror "seatd is not running! Starting seatd..."
+        rc-service seatd start
+    fi
+}
