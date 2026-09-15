@@ -5,6 +5,45 @@ use gastinel_core::geom::{Point, Rect};
 use gastinel_core::mem::{Handle, Pool};
 use gastinel_core::render::{QuadInstance, RenderQueue};
 
+/// État de l'interaction souris en cours sur une fenêtre.
+#[derive(Clone, Debug, PartialEq)]
+pub enum DragState {
+    /// Aucun glissement en cours.
+    None,
+    /// Déplacement de la fenêtre (offset initial du clic dans la barre de titre).
+    Moving {
+        handle: Handle<Window>,
+        offset_x: i32,
+        offset_y: i32,
+    },
+    /// Redimensionnement depuis un bord ou coin.
+    Resizing {
+        handle: Handle<Window>,
+        edge: ResizeEdge,
+        initial_rect: Rect,
+        start_pos: Point,
+    },
+}
+
+/// Bord ou coin utilisé pour le redimensionnement.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ResizeEdge {
+    Right,
+    Bottom,
+    BottomRight,
+}
+
+/// Zone de snap (accrochage) détectée quand la souris touche un bord de l'écran.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum SnapZone {
+    /// Moitié gauche de l'écran.
+    Left,
+    /// Moitié droite de l'écran.
+    Right,
+    /// Plein écran (bord supérieur).
+    Maximize,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Window {
     pub title: String,
@@ -20,6 +59,9 @@ pub struct WorkspaceManager {
     pub workspace_count: u32,
     pub windows: Pool<Window>,
     pub focused_window: Option<Handle<Window>>,
+    pub drag_state: DragState,
+    pub screen_width: u32,
+    pub screen_height: u32,
 }
 
 impl WorkspaceManager {
@@ -31,7 +73,16 @@ impl WorkspaceManager {
             workspace_count,
             windows: Pool::with_capacity(32),
             focused_window: None,
+            drag_state: DragState::None,
+            screen_width: 1920,
+            screen_height: 1080,
         }
+    }
+
+    pub fn with_screen_size(mut self, width: u32, height: u32) -> Self {
+        self.screen_width = width;
+        self.screen_height = height;
+        self
     }
 
     pub fn create_window(&mut self, title: &str, geometry: Rect) -> Handle<Window> {
@@ -99,6 +150,178 @@ impl WorkspaceManager {
         self.windows
             .iter()
             .filter(move |(_, win)| win.workspace_id == active && !win.is_minimized)
+    }
+
+    /// Taille de la zone de grip pour le redimensionnement (pixels).
+    const RESIZE_GRIP: i32 = 8;
+
+    /// Seuil en pixels pour déclencher le snap aux bords de l'écran.
+    const SNAP_THRESHOLD: i32 = 12;
+
+    /// Taille minimum d'une fenêtre (largeur et hauteur).
+    const MIN_WINDOW_SIZE: u32 = 200;
+
+    /// Détecte la zone de snap en fonction de la position de la souris.
+    pub fn detect_snap_zone(&self, pos: Point) -> Option<SnapZone> {
+        if pos.y <= Self::SNAP_THRESHOLD {
+            Some(SnapZone::Maximize)
+        } else if pos.x <= Self::SNAP_THRESHOLD {
+            Some(SnapZone::Left)
+        } else if pos.x >= self.screen_width as i32 - Self::SNAP_THRESHOLD {
+            Some(SnapZone::Right)
+        } else {
+            None
+        }
+    }
+
+    /// Applique le snap à une fenêtre selon la zone détectée.
+    pub fn apply_snap(&mut self, handle: Handle<Window>, zone: SnapZone) {
+        if let Some(win) = self.windows.get_mut(handle) {
+            let topbar_h = 34i32; // Hauteur de la TopBar
+            match zone {
+                SnapZone::Left => {
+                    win.geometry = Rect::new(
+                        0,
+                        topbar_h,
+                        self.screen_width / 2,
+                        self.screen_height - topbar_h as u32,
+                    );
+                }
+                SnapZone::Right => {
+                    let half_w = self.screen_width / 2;
+                    win.geometry = Rect::new(
+                        half_w as i32,
+                        topbar_h,
+                        self.screen_width - half_w,
+                        self.screen_height - topbar_h as u32,
+                    );
+                }
+                SnapZone::Maximize => {
+                    win.geometry = Rect::new(
+                        0,
+                        topbar_h,
+                        self.screen_width,
+                        self.screen_height - topbar_h as u32,
+                    );
+                    win.is_fullscreen = true;
+                }
+            }
+        }
+    }
+
+    /// Détecte le bord de redimensionnement sous le curseur pour une fenêtre donnée.
+    fn detect_resize_edge(win: &Window, pos: Point) -> Option<ResizeEdge> {
+        let grip = Self::RESIZE_GRIP;
+        let near_right = pos.x >= win.geometry.right() - grip;
+        let near_bottom = pos.y >= win.geometry.bottom() - grip;
+
+        match (near_right, near_bottom) {
+            (true, true) => Some(ResizeEdge::BottomRight),
+            (true, false) => Some(ResizeEdge::Right),
+            (false, true) => Some(ResizeEdge::Bottom),
+            _ => None,
+        }
+    }
+
+    /// Gère l'appui du bouton gauche de la souris.
+    /// Retourne true si un drag/resize a été initié.
+    pub fn handle_mouse_down(&mut self, pos: Point) -> bool {
+        // Cherche la fenêtre sous le curseur (du dessus vers le dessous)
+        let active = self.active_workspace;
+        let mut target = None;
+
+        for (handle, win) in self.windows.iter() {
+            if win.workspace_id == active && !win.is_minimized && win.geometry.contains(pos) {
+                target = Some((handle, win.geometry, win.title.clone()));
+            }
+        }
+
+        let (handle, geom, _title) = match target {
+            Some(t) => t,
+            None => return false,
+        };
+
+        // Focus la fenêtre cliquée
+        self.set_focus(Some(handle));
+
+        // Vérifie si on est sur une zone de redimensionnement
+        if let Some(win) = self.windows.get(handle) {
+            if let Some(edge) = Self::detect_resize_edge(win, pos) {
+                self.drag_state = DragState::Resizing {
+                    handle,
+                    edge,
+                    initial_rect: geom,
+                    start_pos: pos,
+                };
+                return true;
+            }
+        }
+
+        // Vérifie si on est dans la barre de titre => déplacement
+        let titlebar = Rect::new(geom.x, geom.y, geom.width, Self::TITLEBAR_HEIGHT);
+        if titlebar.contains(pos) {
+            self.drag_state = DragState::Moving {
+                handle,
+                offset_x: pos.x - geom.x,
+                offset_y: pos.y - geom.y,
+            };
+            return true;
+        }
+
+        false
+    }
+
+    /// Gère le mouvement de la souris pendant un drag en cours.
+    pub fn handle_mouse_move(&mut self, pos: Point) {
+        match self.drag_state.clone() {
+            DragState::Moving { handle, offset_x, offset_y } => {
+                if let Some(win) = self.windows.get_mut(handle) {
+                    win.geometry.x = pos.x - offset_x;
+                    win.geometry.y = pos.y - offset_y;
+                    win.is_fullscreen = false;
+                }
+            }
+            DragState::Resizing { handle, edge, initial_rect, start_pos } => {
+                let dx = pos.x - start_pos.x;
+                let dy = pos.y - start_pos.y;
+
+                if let Some(win) = self.windows.get_mut(handle) {
+                    match edge {
+                        ResizeEdge::Right => {
+                            let new_w = (initial_rect.width as i32 + dx).max(Self::MIN_WINDOW_SIZE as i32) as u32;
+                            win.geometry.width = new_w;
+                        }
+                        ResizeEdge::Bottom => {
+                            let new_h = (initial_rect.height as i32 + dy).max(Self::MIN_WINDOW_SIZE as i32) as u32;
+                            win.geometry.height = new_h;
+                        }
+                        ResizeEdge::BottomRight => {
+                            let new_w = (initial_rect.width as i32 + dx).max(Self::MIN_WINDOW_SIZE as i32) as u32;
+                            let new_h = (initial_rect.height as i32 + dy).max(Self::MIN_WINDOW_SIZE as i32) as u32;
+                            win.geometry.width = new_w;
+                            win.geometry.height = new_h;
+                        }
+                    }
+                }
+            }
+            DragState::None => {}
+        }
+    }
+
+    /// Gère le relâchement du bouton de la souris.
+    /// Applique le snap si la souris est dans une zone d'accrochage.
+    pub fn handle_mouse_up(&mut self, pos: Point) {
+        if let DragState::Moving { handle, .. } = self.drag_state {
+            if let Some(zone) = self.detect_snap_zone(pos) {
+                self.apply_snap(handle, zone);
+            }
+        }
+        self.drag_state = DragState::None;
+    }
+
+    /// Vérifie si une interaction de drag est en cours.
+    pub fn is_dragging(&self) -> bool {
+        self.drag_state != DragState::None
     }
 
     /// Renders visible window frames, titlebars, and Inter titles into the RenderQueue.
@@ -180,5 +403,90 @@ impl WorkspaceManager {
                 z + 0.02,
             ));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_drag_window_move() {
+        let mut wm = WorkspaceManager::new(3);
+        let handle = wm.create_window("Test", Rect::new(100, 100, 400, 300));
+
+        // Clic dans la barre de titre
+        assert!(wm.handle_mouse_down(Point::new(200, 110)));
+        assert!(wm.is_dragging());
+
+        // Déplacement
+        wm.handle_mouse_move(Point::new(300, 200));
+        let win = wm.windows.get(handle).unwrap();
+        assert_eq!(win.geometry.x, 200); // 300 - (200-100) = 200
+        assert_eq!(win.geometry.y, 190); // 200 - (110-100) = 190
+
+        // Relâchement
+        wm.handle_mouse_up(Point::new(300, 200));
+        assert!(!wm.is_dragging());
+    }
+
+    #[test]
+    fn test_snap_left() {
+        let mut wm = WorkspaceManager::new(3);
+        let handle = wm.create_window("Snap Test", Rect::new(100, 100, 400, 300));
+
+        // Clic dans la barre de titre
+        wm.handle_mouse_down(Point::new(200, 110));
+
+        // Relâchement sur le bord gauche
+        wm.handle_mouse_up(Point::new(5, 300));
+
+        let win = wm.windows.get(handle).unwrap();
+        assert_eq!(win.geometry.x, 0);
+        assert_eq!(win.geometry.width, 960); // 1920 / 2
+    }
+
+    #[test]
+    fn test_snap_maximize() {
+        let mut wm = WorkspaceManager::new(3);
+        let handle = wm.create_window("Max Test", Rect::new(100, 100, 400, 300));
+
+        wm.handle_mouse_down(Point::new(200, 110));
+        wm.handle_mouse_up(Point::new(500, 5));
+
+        let win = wm.windows.get(handle).unwrap();
+        assert!(win.is_fullscreen);
+        assert_eq!(win.geometry.width, 1920);
+    }
+
+    #[test]
+    fn test_resize_bottom_right() {
+        let mut wm = WorkspaceManager::new(3);
+        let handle = wm.create_window("Resize", Rect::new(100, 100, 400, 300));
+
+        // Clic dans le coin bas-droit (499, 399 = right()-1, bottom()-1)
+        assert!(wm.handle_mouse_down(Point::new(498, 398)));
+        match &wm.drag_state {
+            DragState::Resizing { edge, .. } => assert_eq!(*edge, ResizeEdge::BottomRight),
+            _ => panic!("Expected Resizing state"),
+        }
+
+        // Agrandir de 50px dans chaque direction
+        wm.handle_mouse_move(Point::new(548, 448));
+        let win = wm.windows.get(handle).unwrap();
+        assert_eq!(win.geometry.width, 450);
+        assert_eq!(win.geometry.height, 350);
+
+        wm.handle_mouse_up(Point::new(548, 448));
+        assert!(!wm.is_dragging());
+    }
+
+    #[test]
+    fn test_detect_snap_zones() {
+        let wm = WorkspaceManager::new(3);
+        assert_eq!(wm.detect_snap_zone(Point::new(5, 500)), Some(SnapZone::Left));
+        assert_eq!(wm.detect_snap_zone(Point::new(1915, 500)), Some(SnapZone::Right));
+        assert_eq!(wm.detect_snap_zone(Point::new(500, 5)), Some(SnapZone::Maximize));
+        assert_eq!(wm.detect_snap_zone(Point::new(500, 500)), None);
     }
 }

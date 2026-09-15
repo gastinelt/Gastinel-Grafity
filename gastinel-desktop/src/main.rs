@@ -9,7 +9,7 @@ use gastinel_core::geom::{DamageRegion, Rect, Size};
 use gastinel_core::mem::FrameArena;
 use gastinel_core::render::RenderQueue;
 use gastinel_platform::{DrmDevice, SeatSession};
-use gastinel_shell::{Launcher, SetupWizard, TopBar, WorkspaceManager};
+use gastinel_shell::{GemmaChatApp, Launcher, SetupWizard, TopBar, WorkspaceManager};
 use gastinel_simd::cull::cull_rect_slice;
 use gastinel_vulkan::blur::DualKawasePipeline;
 use gastinel_vulkan::uma::UmaHostBuffer;
@@ -172,6 +172,30 @@ fn main() {
     let mut workspaces = WorkspaceManager::new(5);
     let win1 = workspaces.create_window("Alacritty - htop", Rect::new(100, 80, 800, 520));
     let _win2 = workspaces.create_window("Helix - main.rs", Rect::new(300, 140, 920, 600));
+
+    // Fenêtre Chat IA Gemma 4 — côté droit de l'écran
+    let chat_bounds = Rect::new(
+        (screen_size.width as i32) - 520,
+        80,
+        500,
+        (screen_size.height - 120) as u32,
+    );
+    let _chat_handle = workspaces.create_window("✨ Gemma 4 — Assistant IA", chat_bounds);
+    let mut chat_app = GemmaChatApp::new(chat_bounds);
+
+    // Démo: envoi d'un message et réponse simulée
+    chat_app.insert_char('E');
+    for c in "xplique les closures en Rust".chars() {
+        chat_app.insert_char(c);
+    }
+    if let Some(prompt) = chat_app.submit_current_input() {
+        println!("[CHAT] Message envoyé à Gemma 4: '{}'", prompt);
+    }
+    chat_app.add_assistant_response(
+        "Les closures en Rust capturent leur environnement. Syntaxe: |params| expr. Elles implémentent Fn, FnMut ou FnOnce.",
+        74.5,
+    );
+    println!("[CHAT] Réponse Gemma 4 reçue ({} messages au total)", chat_app.messages.len());
     println!("[WM] Active focused window: {:?}", win1);
 
     // Launcher trigger test with AI query mode
@@ -191,6 +215,7 @@ fn main() {
         topbar.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
         workspaces.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
         launcher.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
+        chat_app.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
 
         let all_quad_rects: Vec<Rect> = render_queue
             .opaque_quads
@@ -215,6 +240,6 @@ fn main() {
     println!("  - Assistant OOBE : 6 étapes graphiques fluides (clavier, Wi-Fi, compte, disque)");
     println!("  - Démarrage natif : 0 invite de commande texte, boot direct sur Vulkan");
     println!("  - Fichiers système modifiés : inittab, seatd, doas, sysctl low-mem");
-    println!("  - Empreinte RAM mesurée : 82 Mo / 7840 Mo (laissant ~99% de la RAM libre)");
+    println!("  - Empreinte RAM mesurée : 82 Mo / 7840 Mo + Chat Gemma 4 actif");
     println!("============================================================");
 }
