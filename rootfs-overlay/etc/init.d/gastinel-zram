@@ -1,0 +1,49 @@
+#!/sbin/openrc-run
+# Gastinel zram initialization for Intel Core Ultra 5 (8GB LPDDR5x)
+# Sets up ultra-fast RAM compression (lz4/zstd) providing 6GB of virtual swap in RAM.
+
+description="Gastinel High-Speed LPDDR5x zram swap service"
+
+depend() {
+    before localmount
+    after modules
+}
+
+start() {
+    ebegin "Initialisation du pool zram Gastinel (6 Go LPDDR5x)"
+    
+    # Charger le module zram
+    modprobe zram num_devices=1 2>/dev/null || true
+    
+    if [ ! -b /dev/zram0 ]; then
+        eerror "Périphérique /dev/zram0 introuvable"
+        return 1
+    fi
+    
+    # Réinitialiser si déjà actif
+    swapoff /dev/zram0 2>/dev/null || true
+    echo 1 > /sys/block/zram0/reset 2>/dev/null || true
+    
+    # Sélectionner lz4 pour latence minimale absolue à 8733 MT/s (ou zstd si supporté)
+    if grep -q "lz4" /sys/block/zram0/comp_algorithm 2>/dev/null; then
+        echo lz4 > /sys/block/zram0/comp_algorithm
+    elif grep -q "zstd" /sys/block/zram0/comp_algorithm 2>/dev/null; then
+        echo zstd > /sys/block/zram0/comp_algorithm
+    fi
+    
+    # Allouer 6 Go de swap compressé en RAM (6144M)
+    echo 6144M > /sys/block/zram0/disksize
+    
+    # Initialiser et activer le swap zram avec priorité maximale (32767)
+    mkswap -L zram0 /dev/zram0 >/dev/null 2>&1
+    swapon -p 32767 /dev/zram0
+    
+    eend $?
+}
+
+stop() {
+    ebegin "Arrêt du pool zram Gastinel"
+    swapoff /dev/zram0 2>/dev/null || true
+    echo 1 > /sys/block/zram0/reset 2>/dev/null || true
+    eend $?
+}

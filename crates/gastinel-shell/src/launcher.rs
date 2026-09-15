@@ -106,8 +106,25 @@ impl Launcher {
         self.entries.get(idx)
     }
 
+    pub fn is_ai_query(&self) -> bool {
+        self.query.trim_start().starts_with('?')
+    }
+
+    pub fn ai_prompt(&self) -> &str {
+        let trimmed = self.query.trim_start();
+        if let Some(rest) = trimmed.strip_prefix('?') {
+            rest.trim()
+        } else {
+            trimmed
+        }
+    }
+
     fn refilter(&mut self) {
         self.filtered_indices.clear();
+        if self.is_ai_query() {
+            // In AI prompt mode, standard app list is replaced by AI card
+            return;
+        }
         if self.query.is_empty() {
             for i in 0..self.entries.len() {
                 self.filtered_indices.push(i);
@@ -170,7 +187,7 @@ impl Launcher {
         // Query text or placeholder
         if self.query.is_empty() {
             atlas.layout_text(
-                "Type to search applications...",
+                "Type to search or '? prompt' for Local 2B AI...",
                 Point::new(input_rect.x + 16, input_rect.y + 28),
                 15,
                 FontWeight::Regular,
@@ -178,18 +195,76 @@ impl Launcher {
                 glyphs,
             );
         } else {
+            let text_color = if self.is_ai_query() {
+                [0.75, 0.65, 1.0, 1.0] // Soft violet for AI mode
+            } else {
+                [0.98, 0.98, 1.0, 1.0]
+            };
             atlas.layout_text(
                 &self.query,
                 Point::new(input_rect.x + 16, input_rect.y + 28),
                 15,
                 FontWeight::SemiBold,
-                [0.98, 0.98, 1.0, 1.0],
+                text_color,
                 glyphs,
             );
         }
 
-        // 3. Results List
+        // 3. Results List or AI Card
         let item_start_y = input_rect.bottom() + 16;
+
+        if self.is_ai_query() {
+            let ai_card_rect = Rect::new(
+                self.bounds.x + 18,
+                item_start_y,
+                self.bounds.width - 36,
+                110,
+            );
+            // Indigo gradient acrylic card for AI
+            queue.push(QuadInstance::rounded_box(
+                ai_card_rect,
+                10.0,
+                [0.16, 0.12, 0.28, 0.92],
+                [0.45, 0.35, 0.85, 0.80],
+                1.5,
+                0.85,
+            ));
+
+            atlas.layout_text(
+                "✨ Assistant IA Local 2B (Qwen 2.5 / DeepSeek R1 via Vulkan)",
+                Point::new(ai_card_rect.x + 16, ai_card_rect.y + 26),
+                13,
+                FontWeight::Bold,
+                [0.85, 0.75, 1.0, 1.0],
+                glyphs,
+            );
+
+            let prompt_display = if self.ai_prompt().is_empty() {
+                "Posez votre question (ex: ? écris une boucle en Rust sans allocation)..."
+            } else {
+                self.ai_prompt()
+            };
+
+            atlas.layout_text(
+                prompt_display,
+                Point::new(ai_card_rect.x + 16, ai_card_rect.y + 54),
+                13,
+                FontWeight::Regular,
+                [0.95, 0.95, 0.98, 1.0],
+                glyphs,
+            );
+
+            atlas.layout_text(
+                "Appuyez sur Entrée pour générer à ~75 tokens/s (LPDDR5x 8733 MT/s)",
+                Point::new(ai_card_rect.x + 16, ai_card_rect.y + 86),
+                11,
+                FontWeight::Medium,
+                [0.55, 0.85, 0.65, 1.0],
+                glyphs,
+            );
+            return;
+        }
+
         let item_height = 46;
 
         for (slot, &entry_idx) in self.filtered_indices.iter().take(6).enumerate() {

@@ -160,6 +160,8 @@ fn main() {
     let mut topbar = TopBar::new(screen_size.width);
     topbar.update_time("22:38");
     topbar.update_memory(82, 7840);
+    topbar.update_zram(1420);
+    topbar.update_ai_status("AI: 2B (8733MT/s)");
 
     let mut launcher = Launcher::new(screen_size);
     launcher.add_app("Foot Terminal", "foot", "Wayland lightweight terminal");
@@ -172,8 +174,12 @@ fn main() {
     let _win2 = workspaces.create_window("Helix - main.rs", Rect::new(300, 140, 920, 600));
     println!("[WM] Active focused window: {:?}", win1);
 
-    // Launcher trigger test
+    // Launcher trigger test with AI query mode
     launcher.open();
+    for c in "? comment optimiser Rust sur 8Go LPDDR5x ?".chars() {
+        launcher.insert_char(c);
+    }
+    println!("[AI] Mode Prompt IA actif dans le launcher: prompt='{}'", launcher.ai_prompt());
     damage.add_rect(launcher.bounds);
     damage.coalesce();
 

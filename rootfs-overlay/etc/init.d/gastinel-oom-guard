@@ -1,0 +1,44 @@
+#!/sbin/openrc-run
+# Gastinel OOM Protection Service
+# Protects the Gastinel Desktop session and AI inference engine from rogue memory spikes.
+
+description="Gastinel OOM Priority and Memory Protection Guard"
+
+depend() {
+    after gastinel
+}
+
+start() {
+    ebegin "Activation de la protection OOM Gastinel"
+    
+    # 1. Protéger le serveur graphique Gastinel Desktop (oom_score_adj = -900)
+    PID_DESKTOP=$(pgrep -f "gastinel-desktop" 2>/dev/null || true)
+    if [ -n "$PID_DESKTOP" ]; then
+        for pid in $PID_DESKTOP; do
+            echo -900 > /proc/$pid/oom_score_adj 2>/dev/null || true
+        done
+    fi
+
+    # 2. Protéger seatd et les pilotes graphiques
+    PID_SEATD=$(pgrep -f "seatd" 2>/dev/null || true)
+    if [ -n "$PID_SEATD" ]; then
+        for pid in $PID_SEATD; do
+            echo -950 > /proc/$pid/oom_score_adj 2>/dev/null || true
+        done
+    fi
+
+    # 3. Accorder une priorité de sécurité au serveur LLM local (oom_score_adj = -500)
+    PID_LLAMA=$(pgrep -f "llama-server|ollama" 2>/dev/null || true)
+    if [ -n "$PID_LLAMA" ]; then
+        for pid in $PID_LLAMA; do
+            echo -500 > /proc/$pid/oom_score_adj 2>/dev/null || true
+        done
+    fi
+
+    eend 0
+}
+
+stop() {
+    ebegin "Désactivation du guard OOM"
+    eend 0
+}
