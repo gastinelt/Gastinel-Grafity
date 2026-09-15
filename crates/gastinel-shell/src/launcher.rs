@@ -231,7 +231,7 @@ impl Launcher {
             ));
 
             atlas.layout_text(
-                "✨ Assistant IA Local 2B (Qwen 2.5 / DeepSeek R1 via Vulkan)",
+                "✨ Assistant IA Local (Gemma 4 E2B via Vulkan)",
                 Point::new(ai_card_rect.x + 16, ai_card_rect.y + 26),
                 13,
                 FontWeight::Bold,

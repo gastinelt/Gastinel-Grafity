@@ -38,28 +38,39 @@ cmake --build . --config Release -j$(nproc) --target llama-cli llama-server
 cp bin/llama-cli "$BIN_DIR/llama-cli"
 cp bin/llama-server "$BIN_DIR/llama-server"
 
-echo "[3/4] Téléchargement des modèles IA 2B ultra-rapides recommandés..."
+echo "[3/4] Configuration du modèle IA 2B ultra-optimisé (Gemma 4 E2B)..."
 cd "$MODELS_DIR"
 
-# 1. Qwen 2.5 1.5B Instruct Q8_0 (~1.8 Go VRAM, français fluide, code, 70+ tok/s)
-if [ ! -f "qwen2.5-1.5b-instruct-q8_0.gguf" ]; then
-    echo "  -> Téléchargement de Qwen 2.5 1.5B Instruct (Q8_0)..."
-    curl -L -C - -o qwen2.5-1.5b-instruct-q8_0.gguf \
-        "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q8_0.gguf"
+# Modèle fourni localement par l'utilisateur : Gemma-4-E2B-Uncensored-HauhauCS-Aggressive
+GEMMA_MODEL="Gemma-4-E2B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf"
+
+if [ ! -f "$GEMMA_MODEL" ]; then
+    echo "Recherche du modèle Gemma 4 dans les dossiers locaux..."
+    # 1. Vérification dans le dossier Téléchargements / Quick Share Windows (si monté)
+    for candidate in \
+        "/mnt/c/Users/theog/Downloads/Quick Share/$GEMMA_MODEL" \
+        "/media/windows/Users/theog/Downloads/Quick Share/$GEMMA_MODEL" \
+        "/home/theog/Downloads/$GEMMA_MODEL" \
+        "/root/$GEMMA_MODEL"; do
+        if [ -f "$candidate" ]; then
+            echo "  -> Modèle local trouvé : $candidate"
+            cp "$candidate" "$MODELS_DIR/$GEMMA_MODEL"
+            break
+        fi
+    done
 fi
 
-# 2. DeepSeek R1 Distill Qwen 1.5B Q5_K_M (~1.2 Go VRAM, raisonnement logique)
-if [ ! -f "DeepSeek-R1-Distill-Qwen-1.5B-Q5_K_M.gguf" ]; then
-    echo "  -> Téléchargement de DeepSeek-R1-Distill 1.5B (Q5_K_M)..."
-    curl -L -C - -o DeepSeek-R1-Distill-Qwen-1.5B-Q5_K_M.gguf \
-        "https://huggingface.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-1.5B-Q5_K_M.gguf"
+if [ -f "$GEMMA_MODEL" ]; then
+    echo "  -> Modèle Gemma 4 E2B prêt : $MODELS_DIR/$GEMMA_MODEL"
+else
+    echo "  [INFO] Veuillez copier '$GEMMA_MODEL' dans $MODELS_DIR/"
 fi
 
 echo "[4/4] Création du lanceur rapide 'ask-ai'..."
 cat << 'EOF' > "$BIN_DIR/ask-ai"
 #!/bin/sh
 # Lanceur interactif Gastinel AI avec offload Vulkan et threads Core Ultra 5
-MODEL="${1:-/opt/gastinel-ai/models/qwen2.5-1.5b-instruct-q8_0.gguf}"
+MODEL="${1:-/opt/gastinel-ai/models/Gemma-4-E2B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf}"
 shift 2>/dev/null || true
 
 # -ngl 99 : Tout décharger dans la VRAM partagée LPDDR5x via Vulkan
@@ -70,7 +81,7 @@ exec llama-cli \
     -t 6 \
     -c 4096 \
     --color \
-    -p "Tu es l'assistant local Gastinel. Tu réponds de manière concise, intelligente et directe en français." \
+    -p "Tu es l'assistant local Gastinel propulsé par Gemma 4. Tu réponds de manière concise, intelligente et directe en français." \
     "$@"
 EOF
 
@@ -86,11 +97,11 @@ depend() {
 }
 
 start() {
-    ebegin "Démarrage du démon IA 2B local (Vulkan / Qwen 2.5)"
+    ebegin "Démarrage du démon IA 2B local (Vulkan / Gemma 4 E2B)"
     start-stop-daemon --start --background \
         --make-pidfile --pidfile /run/gastinel-ai.pid \
         --exec /usr/local/bin/llama-server -- \
-        -m /opt/gastinel-ai/models/qwen2.5-1.5b-instruct-q8_0.gguf \
+        -m /opt/gastinel-ai/models/Gemma-4-E2B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf \
         -ngl 99 -t 6 -c 4096 --port 8080 --host 127.0.0.1
     eend $?
 }

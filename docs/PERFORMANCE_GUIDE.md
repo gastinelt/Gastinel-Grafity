@@ -63,22 +63,16 @@ Par défaut, `rust-analyzer` indexe agressivement toutes les dépendances en RAM
 
 ---
 
-## 4. Inférence IA 2B : Les Modèles Champions
+## 4. Inférence IA : Modèle Choisi (Gemma 4 E2B HauhauCS Aggressive)
 
-Grâce à la bande passante LPDDR5x de 8733 MT/s, voici les vitesses réelles obtenues :
+Grâce à la bande passante LPDDR5x de 8733 MT/s et au moteur Vulkan unifié (UMA) :
 
-1. **Qwen 2.5 1.5B Instruct (Q8_0)** :
-   - **Taille** : 1.78 Go
-   - **Vitesse estimée** : ~65 à 80 tokens/seconde
-   - **Points forts** : Parfait en français, excellent en génération de code (Python, Rust, Shell), formatage JSON/Markdown impeccable.
-2. **DeepSeek-R1-Distill-Qwen-1.5B (Q5_K_M)** :
-   - **Taille** : 1.25 Go
-   - **Vitesse estimée** : ~85 tokens/seconde
-   - **Points forts** : Raisonnement pas-à-pas avec balises `<think>`, résolution de bugs complexes.
-3. **Gemma 2 2B Instruct (Q4_K_M)** :
-   - **Taille** : 1.62 Go
-   - **Vitesse estimée** : ~70 tokens/seconde
-   - **Points forts** : Rédaction, synthèse documentaire et logique générale de haut niveau.
+- **Modèle sélectionné** : `Gemma-4-E2B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf`
+- **Fichier local** : `C:\Users\theog\Downloads\Quick Share\Gemma-4-E2B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf` (3.00 Go)
+- **Variante alternative disponible** : `Q4_K_P` (3.45 Go, sur appareil mobile / Samsung)
+- **Vitesse estimée** : ~65 à 75 tokens/seconde constants
+- **Points forts** : Modèle non-censuré, ultra-optimisé pour les instructions directes, réactif sur le code et le français, aucune latence perceptible.
+- **Budget VRAM UMA** : ~2.9 Go alloués dynamiquement dans la LPDDR5x, laissant **près de 5 Go de RAM physique libre** pour le multitâche et la compilation !
 
 ---
 

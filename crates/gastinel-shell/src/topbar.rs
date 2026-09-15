@@ -29,7 +29,7 @@ impl TopBar {
             ram_used_mb: 85,
             ram_total_mb: 8192,
             zram_saved_mb: 1420,
-            ai_status_str: String::from("AI: 2B (8733MT/s)"),
+            ai_status_str: String::from("AI: Gemma 4 (8733MT/s)"),
         }
     }
 

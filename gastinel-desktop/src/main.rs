@@ -161,7 +161,7 @@ fn main() {
     topbar.update_time("22:38");
     topbar.update_memory(82, 7840);
     topbar.update_zram(1420);
-    topbar.update_ai_status("AI: 2B (8733MT/s)");
+    topbar.update_ai_status("AI: Gemma 4 (8733MT/s)");
 
     let mut launcher = Launcher::new(screen_size);
     launcher.add_app("Foot Terminal", "foot", "Wayland lightweight terminal");
@@ -176,10 +176,10 @@ fn main() {
 
     // Launcher trigger test with AI query mode
     launcher.open();
-    for c in "? comment optimiser Rust sur 8Go LPDDR5x ?".chars() {
+    for c in "? Gemma 4, optimise cette boucle en Rust".chars() {
         launcher.insert_char(c);
     }
-    println!("[AI] Mode Prompt IA actif dans le launcher: prompt='{}'", launcher.ai_prompt());
+    println!("[AI] Mode Prompt IA actif dans le launcher (Gemma 4): prompt='{}'", launcher.ai_prompt());
     damage.add_rect(launcher.bounds);
     damage.coalesce();
 
