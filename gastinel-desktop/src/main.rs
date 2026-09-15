@@ -9,7 +9,10 @@ use gastinel_core::geom::{DamageRegion, Rect, Size};
 use gastinel_core::mem::FrameArena;
 use gastinel_core::render::RenderQueue;
 use gastinel_platform::{DrmDevice, SeatSession};
-use gastinel_shell::{GemmaChatApp, Launcher, SetupWizard, TopBar, WorkspaceManager};
+use gastinel_shell::{
+    CalcOp, Calculator, ClockApp, FilesApp, GastinelMonitor, GemmaChatApp, Launcher,
+    ScreenshotTool, SettingsApp, SetupWizard, TopBar, WorkspaceManager,
+};
 use gastinel_simd::cull::cull_rect_slice;
 use gastinel_vulkan::blur::DualKawasePipeline;
 use gastinel_vulkan::uma::UmaHostBuffer;
@@ -164,14 +167,64 @@ fn main() {
     topbar.update_ai_status("AI: Gemma 4 (8733MT/s)");
 
     let mut launcher = Launcher::new(screen_size);
-    launcher.add_app("Foot Terminal", "foot", "Wayland lightweight terminal");
-    launcher.add_app("File Manager", "nnn", "Ultra-fast terminal file manager");
-    launcher.add_app("Firefox", "firefox", "Modern web browser");
-    launcher.add_app("Helix Editor", "hx", "Modal code editor");
+    launcher.add_app("Calculatrice ASM", "gastinel-calc", "Calculatrice arithmétique 100% assembleur x86_64");
+    launcher.add_app("Horloge & Chrono", "gastinel-clock", "Horloge précise à la ms, alarmes et chronomètre");
+    launcher.add_app("Moniteur Système", "gastinel-top", "Mémoire LPDDR5x, 10 cœurs CPU Intel Ultra, GPU UMA");
+    launcher.add_app("Paramètres", "gastinel-settings", "Configuration complète du système et IA Gemma 4");
+    launcher.add_app("Fichiers", "gastinel-files", "Gestionnaire de fichiers et prévisualisation rapide");
+    launcher.add_app("Capture d'Écran", "gastinel-screenshot", "Capture région, fenêtre ou plein écran (BMP)");
 
     let mut workspaces = WorkspaceManager::new(5);
     let win1 = workspaces.create_window("Alacritty - htop", Rect::new(100, 80, 800, 520));
     let _win2 = workspaces.create_window("Helix - main.rs", Rect::new(300, 140, 920, 600));
+
+    // =========================================================================
+    // APPS SYSTÈME DÉMONSTRATION
+    // =========================================================================
+    println!("\n[APPS] Initialisation des 6 applications système...");
+
+    // 1. Calculatrice ASM
+    let mut calc_app = Calculator::new(Rect::new(80, 120, 320, 440));
+    calc_app.press_digit('8');
+    calc_app.press_op(CalcOp::Mul);
+    calc_app.press_digit('9');
+    calc_app.press_equals();
+    println!("  -> [CALC] Moteur ASM x86_64: 8 × 9 = {} (display='{}')", calc_app.accumulator, calc_app.display);
+    calc_app.press_clear();
+    calc_app.press_digit('6');
+    calc_app.press_digit('4');
+    calc_app.press_sqrt();
+    println!("  -> [CALC] Moteur ASM sqrtsd: √(64) = {} (display='{}')", calc_app.accumulator, calc_app.display);
+
+    // 2. Horloge & Chronomètre (précision ms)
+    let mut clock_app = ClockApp::new(Rect::new(420, 120, 400, 340));
+    clock_app.update_time("22:52:14", 872);
+    clock_app.stopwatch.start();
+    clock_app.stopwatch.lap();
+    println!("  -> [CLOCK] Heure précise: {}.{:03} • Chrono actif: {}", clock_app.current_time_str, clock_app.current_ms, clock_app.format_stopwatch());
+
+    // 3. Moniteur Système (Mémoire LPDDR5x, Cœurs CPU, GPU)
+    let mut sys_monitor = GastinelMonitor::new(Rect::new(840, 120, 500, 420));
+    sys_monitor.refresh();
+    println!("  -> [SYSINFO] RAM: {} Mo / {} Mo • zram: {} Mo économisés • CPU: {} cœurs • GPU: {}",
+        sys_monitor.memory.used_mb, sys_monitor.memory.total_mb, sys_monitor.memory.zram_saved_mb,
+        sys_monitor.cpu.cores.len(), sys_monitor.gpu.name);
+
+    // 4. Paramètres Système
+    let mut settings_app = SettingsApp::new(Rect::new(120, 160, 680, 480));
+    settings_app.select_category(gastinel_shell::SettingsCategory::IA);
+    println!("  -> [SETTINGS] 8 catégories • Section IA active : {} paramètres configurés", settings_app.items.len());
+
+    // 5. Gestionnaire de Fichiers
+    let files_app = FilesApp::new(Rect::new(200, 140, 720, 460));
+    println!("  -> [FILES] Répertoire: '{}' • {} éléments détectés", files_app.current_path.display(), files_app.entries.len());
+
+    // 6. Capture d'Écran
+    let mut screenshot_app = ScreenshotTool::new(Rect::new(500, 80, 360, 160));
+    screenshot_app.start_selection(gastinel_core::geom::Point::new(100, 100));
+    screenshot_app.update_selection(gastinel_core::geom::Point::new(600, 400));
+    screenshot_app.finish_selection();
+    println!("  -> [SCREENSHOT] Outil prêt • Capture démo effectuée (BMP)");
 
     // Fenêtre Chat IA Gemma 4 — côté droit de l'écran
     let chat_bounds = Rect::new(
@@ -216,6 +269,12 @@ fn main() {
         workspaces.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
         launcher.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
         chat_app.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
+        calc_app.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
+        clock_app.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
+        sys_monitor.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
+        settings_app.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
+        files_app.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
+        screenshot_app.render(&inter_atlas, &mut render_queue, &mut glyph_batch);
 
         let all_quad_rects: Vec<Rect> = render_queue
             .opaque_quads
@@ -240,6 +299,7 @@ fn main() {
     println!("  - Assistant OOBE : 6 étapes graphiques fluides (clavier, Wi-Fi, compte, disque)");
     println!("  - Démarrage natif : 0 invite de commande texte, boot direct sur Vulkan");
     println!("  - Fichiers système modifiés : inittab, seatd, doas, sysctl low-mem");
+    println!("  - 6 Apps Système : Calculatrice ASM, Horloge ms, Moniteur, Paramètres, Fichiers, Capture");
     println!("  - Empreinte RAM mesurée : 82 Mo / 7840 Mo + Chat Gemma 4 actif");
     println!("============================================================");
 }

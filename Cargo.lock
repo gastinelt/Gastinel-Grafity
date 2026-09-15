@@ -29,6 +29,7 @@ name = "gastinel-shell"
 version = "0.1.0"
 dependencies = [
  "gastinel-core",
+ "gastinel-simd",
 ]
 
 [[package]]

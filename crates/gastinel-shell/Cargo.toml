@@ -6,3 +6,4 @@ license.workspace = true
 
 [dependencies]
 gastinel-core = { path = "../gastinel-core" }
+gastinel-simd = { path = "../gastinel-simd" }
