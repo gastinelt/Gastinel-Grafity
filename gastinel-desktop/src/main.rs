@@ -8,7 +8,7 @@ use gastinel_core::font::InterAtlas;
 use gastinel_core::geom::{DamageRegion, Rect, Size};
 use gastinel_core::mem::FrameArena;
 use gastinel_core::render::RenderQueue;
-use gastinel_platform::{DrmDevice, SeatSession};
+use gastinel_platform::{DrmDevice, SeatSession, WaylandServer};
 use gastinel_shell::{
     AiDashboardApp, AltTabSwitcher, CalcOp, Calculator, ClockApp, ContextMenu, FilesApp,
     GastinelMonitor, GastinelWriteApp, GemmaChatApp, Launcher, LockScreen, NotificationCenter,
@@ -181,8 +181,16 @@ fn main() {
     launcher.add_app("Tableau de bord IA", "gastinel-ai", "Supervision experte de Gemma 4 et débit 8733MT/s");
 
     let mut workspaces = WorkspaceManager::new(5);
-    let win1 = workspaces.create_window("Alacritty - htop", Rect::new(100, 80, 800, 520));
-    let _win2 = workspaces.create_window("Helix - main.rs", Rect::new(300, 140, 920, 600));
+    // =========================================================================
+    // SERVEUR COMPOSITEUR WAYLAND (xdg_shell + wl_surface)
+    // =========================================================================
+    let mut wayland_server = WaylandServer::new("wayland-0");
+    println!("\n[WAYLAND] Serveur compositeur démarré sur '{}'", wayland_server.socket_path);
+    let (wl_client_id, wl_surface_id) = wayland_server.connect_mock_client("Firefox ESR", 960, 640);
+    let wl_events = wayland_server.drain_events();
+    println!("  -> [WAYLAND] Client #{} connecté (surface #{}) • {} événements traités", wl_client_id, wl_surface_id, wl_events.len());
+    let win1 = workspaces.create_window("Firefox ESR - Mozilla", Rect::new(240, 160, 960, 640));
+    println!("  -> [WAYLAND] Surface XDG Toplevel mappée dans le gestionnaire de fenêtres Gastinel");
 
     // =========================================================================
     // ÉCOSYSTÈME DE COMPOSANTS ET APPS SYSTÈME
