@@ -45,7 +45,7 @@ pub struct ThemeManager {
 impl ThemeManager {
     pub fn new() -> Self {
         Self {
-            mode: ThemeMode::BleuMinuit,
+            mode: ThemeMode::ClairMinimaliste,
             accent: AccentColor::Indigo,
         }
     }
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn test_theme_colors() {
         let mut tm = ThemeManager::new();
-        assert_eq!(tm.mode, ThemeMode::BleuMinuit);
+        assert_eq!(tm.mode, ThemeMode::ClairMinimaliste);
 
         tm.set_theme(ThemeMode::CyberpunkOled);
         assert_eq!(tm.background_color(), [0.03, 0.03, 0.04, 1.0]);
