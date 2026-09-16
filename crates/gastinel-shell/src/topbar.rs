@@ -137,40 +137,27 @@ impl TopBar {
             glyphs,
         );
 
-        // 4. Right: AI 2B Engine pill + RAM & zram Monitor stats
-        // AI Badge (e.g. "AI: 2B (8733MT/s)")
-        let ai_pill_w = 126;
-        let ai_pill_h = self.height - 10;
-        let ai_x = self.bounds.width as i32 - 340;
-        let ai_rect = Rect::new(ai_x, 5, ai_pill_w, ai_pill_h);
+        // 4. Right: Main Menu badge [ GASTINEL ☰ ]
+        let menu_w = 110;
+        let menu_h = self.height - 10;
+        let menu_x = self.bounds.width as i32 - menu_w - 12;
+        let menu_rect = Rect::new(menu_x, 5, menu_w as u32, menu_h);
 
         queue.push(QuadInstance::rounded_box(
-            ai_rect,
+            menu_rect,
             6.0,
-            [0.22, 0.16, 0.40, 0.85], // Deep indigo acrylic
-            [0.45, 0.35, 0.80, 0.70], // Violet border
+            [0.22, 0.47, 0.94, 0.95], // Electric blue
+            [0.40, 0.65, 1.00, 0.80],
             1.0,
-            0.2,
+            0.1,
         ));
 
         atlas.layout_text(
-            &self.ai_status_str,
-            Point::new(ai_x + 10, 22),
+            "GASTINEL ☰",
+            Point::new(menu_x + 14, 22),
             11,
-            FontWeight::SemiBold,
-            [0.85, 0.78, 1.0, 1.0], // Soft violet text
-            glyphs,
-        );
-
-        // RAM & zram text
-        let ram_text = format!("RAM: {}M / {}M (+{}M zram)", self.ram_used_mb, self.ram_total_mb, self.zram_saved_mb);
-        let ram_x = self.bounds.width as i32 - 200;
-        atlas.layout_text(
-            &ram_text,
-            Point::new(ram_x, 22),
-            11,
-            FontWeight::Regular,
-            [0.55, 0.85, 0.65, 1.0], // Soft green for healthy ultralow RAM
+            FontWeight::Bold,
+            [1.0, 1.0, 1.0, 1.0],
             glyphs,
         );
     }
