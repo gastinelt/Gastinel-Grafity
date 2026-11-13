@@ -4,7 +4,9 @@
 description="Gastinel Wayland Desktop Environment"
 supervisor="supervise-daemon"
 command="/usr/bin/gastinel-desktop"
-command_user="theog:seat"
+# Compte créé par l'OOBE (voir /etc/conf.d/gastinel)
+GASTINEL_USER="${GASTINEL_USER:-gastinel}"
+command_user="${GASTINEL_USER}:seat"
 
 depend() {
     need udev seatd localmount

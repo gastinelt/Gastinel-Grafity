@@ -112,7 +112,7 @@ fn main() {
     damage.clear();
 
     // Step 3: User Account & Security
-    println!("\n[OOBE Step 3] Compte Utilisateur ('theog')");
+    println!("\n[OOBE Step 3] Compte Utilisateur ('gastinel')");
     wizard.next_step();
     damage.add_rect(wizard.card_bounds);
     renderer.render_frame(&damage, |_| {

@@ -1,0 +1,3 @@
+# Configuration du service Gastinel Desktop (OpenRC)
+# Compte utilisateur qui exécute la session graphique (défini par l'OOBE).
+GASTINEL_USER="gastinel"

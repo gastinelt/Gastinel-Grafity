@@ -80,7 +80,7 @@ Pour éviter toute ligne de commande à l'installation (`setup-alpine`, prompt `
 ### L'Assistant de Premier Démarrage ([`SetupWizard`](file:///crates/gastinel-shell/src/wizard.rs)) :
 1. **Bienvenue & Clavier** : Choix AZERTY / QWERTY avec zone de test interactive.
 2. **Réseau & Wi-Fi** : Liste visuelle avec jauge de signal (`%`) et champ de mot de passe masqué.
-3. **Compte Utilisateur** : Création du compte (`theog`), nom d'hôte (`gastinel-book5`) et privilèges administrateur.
+3. **Compte Utilisateur** : Création du compte (par défaut `gastinel`), nom d'hôte (`gastinel-book5`) et privilèges administrateur.
 4. **Destination Disque** : SSD principal automatique, dual-boot partitionné préservant Windows, ou clé USB nomade.
 5. **Progression Animée** : Barre de progression déballant musl libc, OpenRC, seatd et le noyau EFI.
 6. **Finalisation** : Transition immédiate et fluide vers le bureau Gastinel.

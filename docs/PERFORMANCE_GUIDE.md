@@ -68,7 +68,7 @@ Par défaut, `rust-analyzer` indexe agressivement toutes les dépendances en RAM
 Grâce à la bande passante LPDDR5x de 8733 MT/s et au moteur Vulkan unifié (UMA) :
 
 - **Modèle sélectionné** : `Gemma-4-E2B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf`
-- **Fichier local** : `C:\Users\theog\Downloads\Quick Share\Gemma-4-E2B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf` (3.00 Go)
+- **Fichier local** : `%USERPROFILE%\Downloads\Quick Share\Gemma-4-E2B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf` (3.00 Go)
 - **Variante alternative disponible** : `Q4_K_P` (3.45 Go, sur appareil mobile / Samsung)
 - **Vitesse estimée** : ~65 à 75 tokens/seconde constants
 - **Points forts** : Modèle non-censuré, ultra-optimisé pour les instructions directes, réactif sur le code et le français, aucune latence perceptible.

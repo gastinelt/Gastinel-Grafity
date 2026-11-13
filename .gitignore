@@ -3,3 +3,10 @@
 *.pdb
 .DS_Store
 Thumbs.db
+
+# Fichiers lourds / locaux à ne jamais pousser
+*.iso
+*.img
+*.gguf
+/Server/
+/Desktop/

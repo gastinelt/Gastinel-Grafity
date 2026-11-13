@@ -108,7 +108,7 @@ impl TerminalTab {
 
         if cmd.is_empty() {
             self.lines.push(TerminalLine {
-                text: format!("theog@gastinel-book5:{}$ ", self.current_dir),
+                text: format!("gastinel@gastinel-book5:{}$ ", self.current_dir),
                 is_command: true,
                 is_error: false,
             });
@@ -117,7 +117,7 @@ impl TerminalTab {
 
         self.command_history.push(cmd.clone());
         self.lines.push(TerminalLine {
-            text: format!("theog@gastinel-book5:{}$ {}", self.current_dir, cmd),
+            text: format!("gastinel@gastinel-book5:{}$ {}", self.current_dir, cmd),
             is_command: true,
             is_error: false,
         });
@@ -386,7 +386,7 @@ impl TerminalApp {
 
         // Ligne de saisie active tout en bas
         let prompt_y = self.bounds.bottom() - 28;
-        let prompt_text = format!("theog@gastinel-book5:{}$ {}", cur_tab.current_dir, cur_tab.input_buffer);
+        let prompt_text = format!("gastinel@gastinel-book5:{}$ {}", cur_tab.current_dir, cur_tab.input_buffer);
         atlas.layout_text(
             &prompt_text,
             Point::new(self.bounds.x + 14, prompt_y + 16),
