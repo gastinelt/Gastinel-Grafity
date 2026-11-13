@@ -99,7 +99,7 @@ Toutes les commandes fonctionnent hors-ligne sur Windows comme sur Linux :
 # Vérifier la compilation de tous les crates
 cargo check --offline
 
-# Lancer les 13 tests unitaires (temps d'exécution : 0.00s)
+# Lancer les 55 tests unitaires (core 6, platform 3, shell 37, simd 5, vulkan 4)
 cargo test --offline
 
 # Lancer le moteur et simuler le Setup Wizard + Bureau
