@@ -1,0 +1,15 @@
+name: CI Alpine headless
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  alpine-lavapipe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construire l'image CI (Alpine + Lavapipe)
+        run: docker build -f Dockerfile.ci -t gastinel-ci .
+      - name: Tests, build musl dynamique, Vulkan, Weston
+        run: docker run --rm -v "$PWD":/src gastinel-ci

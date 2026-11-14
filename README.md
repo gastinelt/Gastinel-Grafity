@@ -76,6 +76,10 @@ cargo test --offline
 
 # Exécuter la démo console actuelle
 cargo run --bin gastinel-desktop --offline
+
+# CI headless Alpine (tests, build musl dynamique, Vulkan Lavapipe, Weston)
+docker build -f Dockerfile.ci -t gastinel-ci .
+docker run --rm -v "$PWD":/src gastinel-ci
 ```
 
 ---
@@ -141,6 +145,10 @@ cargo test --offline
 
 # Run the current scripted console demo
 cargo run --bin gastinel-desktop --offline
+
+# Headless Alpine CI (tests, dynamic musl build, Vulkan Lavapipe, Weston)
+docker build -f Dockerfile.ci -t gastinel-ci .
+docker run --rm -v "$PWD":/src gastinel-ci
 ```
 
 ---

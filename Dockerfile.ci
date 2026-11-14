@@ -1,0 +1,18 @@
+# Image CI headless Alpine + Mesa Lavapipe (Phase 3)
+# Construire :  docker build -f Dockerfile.ci -t gastinel-ci .
+# Lancer     :  docker run --rm -v "$PWD":/src gastinel-ci
+FROM alpine:3.21
+
+RUN apk add --no-cache \
+        rust cargo musl-dev \
+        vulkan-loader vulkan-tools mesa-vulkan-swrast \
+        weston weston-backend-headless weston-shell-desktop \
+        binutils file bash
+
+# Forcer Lavapipe (Vulkan sur CPU, pas de GPU physique en Cloud)
+ENV VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json \
+    XDG_RUNTIME_DIR=/tmp/xdg-runtime \
+    CARGO_TARGET_DIR=/tmp/target
+
+WORKDIR /src
+CMD ["bash", "tools/ci-check.sh"]

@@ -28,7 +28,18 @@ Feuille de route : `docs/PLAN_30_PHASES.md`. Dossier de reprise historique : `Co
 cargo check --offline
 cargo test --offline          # 55 tests
 cargo run --bin gastinel-desktop --offline
+
+# CI complète sous Alpine + Lavapipe + Weston headless (Phases 2-3)
+docker build -f Dockerfile.ci -t gastinel-ci . && docker run --rm -v "$PWD":/src gastinel-ci
 ```
+
+## Build musl / CI
+- `.cargo/config.toml` : `offline = true`, sources crates.io remplacées par `vendor/`, `-crt-static` pour musl.
+- Ne pas cross-compiler musl depuis un hôte glibc (ça lie `libc.so.6`) : construire sous Alpine.
+- Dans ce sandbox cloud, Docker n'a pas de réseau direct : lancer `dockerd`, puis builder avec `--network host`,
+  le proxy en `--build-arg https_proxy=...` et la CA `/root/.ccr/ca-bundle.crt` copiée en première couche
+  (image dérivée dans le scratchpad, ne pas modifier `Dockerfile.ci`).
+- Phases faites : 1, 2, 3.
 
 ## Tests (état au 2026-11-13 : 55/55 OK)
 | Crate | Tests |
