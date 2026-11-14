@@ -1,6 +1,6 @@
 //! Écran de verrouillage (Lock Screen) pour Gastinel Desktop.
 //!
-//! Sécurise la session utilisateur avec horloge géante, profil utilisateur `theog`,
+//! Sécurise la session utilisateur avec horloge géante, profil utilisateur par défaut `gastinel`,
 //! champ de mot de passe/PIN masqué et indicateurs de batterie et Wi-Fi.
 
 use gastinel_core::font::{FontWeight, GlyphInstance, InterAtlas};
@@ -28,7 +28,7 @@ impl LockScreen {
         Self {
             is_locked: false,
             user_name: String::from("Théo G."),
-            user_handle: String::from("theog"),
+            user_handle: String::from("gastinel"),
             pin_buffer: String::with_capacity(16),
             expected_pin: String::from("1234"),
             has_error: false,

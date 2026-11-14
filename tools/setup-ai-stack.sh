@@ -48,9 +48,10 @@ if [ ! -f "$GEMMA_MODEL" ]; then
     echo "Recherche du modèle Gemma 4 dans les dossiers locaux..."
     # 1. Vérification dans le dossier Téléchargements / Quick Share Windows (si monté)
     for candidate in \
-        "/mnt/c/Users/theog/Downloads/Quick Share/$GEMMA_MODEL" \
-        "/media/windows/Users/theog/Downloads/Quick Share/$GEMMA_MODEL" \
-        "/home/theog/Downloads/$GEMMA_MODEL" \
+        "/mnt/c/Users/${WIN_USER:-$USER}/Downloads/Quick Share/$GEMMA_MODEL" \
+        "/media/windows/Users/${WIN_USER:-$USER}/Downloads/Quick Share/$GEMMA_MODEL" \
+        "${SUDO_USER:+/home/$SUDO_USER/Downloads/$GEMMA_MODEL}" \
+        "$HOME/Downloads/$GEMMA_MODEL" \
         "/root/$GEMMA_MODEL"; do
         if [ -f "$candidate" ]; then
             echo "  -> Modèle local trouvé : $candidate"

@@ -82,7 +82,7 @@ impl SetupWizard {
             wifi_password: String::new(),
 
             full_name: String::from("Théo"),
-            username: String::from("theog"),
+            username: String::from("gastinel"),
             password: String::new(),
             confirm_password: String::new(),
             hostname: String::from("gastinel-book5"),

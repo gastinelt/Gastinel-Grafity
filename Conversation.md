@@ -80,7 +80,7 @@ Pour éviter toute ligne de commande à l'installation (`setup-alpine`, prompt `
 ### L'Assistant de Premier Démarrage ([`SetupWizard`](file:///crates/gastinel-shell/src/wizard.rs)) :
 1. **Bienvenue & Clavier** : Choix AZERTY / QWERTY avec zone de test interactive.
 2. **Réseau & Wi-Fi** : Liste visuelle avec jauge de signal (`%`) et champ de mot de passe masqué.
-3. **Compte Utilisateur** : Création du compte (`theog`), nom d'hôte (`gastinel-book5`) et privilèges administrateur.
+3. **Compte Utilisateur** : Création du compte (par défaut `gastinel`), nom d'hôte (`gastinel-book5`) et privilèges administrateur.
 4. **Destination Disque** : SSD principal automatique, dual-boot partitionné préservant Windows, ou clé USB nomade.
 5. **Progression Animée** : Barre de progression déballant musl libc, OpenRC, seatd et le noyau EFI.
 6. **Finalisation** : Transition immédiate et fluide vers le bureau Gastinel.
@@ -99,7 +99,7 @@ Toutes les commandes fonctionnent hors-ligne sur Windows comme sur Linux :
 # Vérifier la compilation de tous les crates
 cargo check --offline
 
-# Lancer les 13 tests unitaires (temps d'exécution : 0.00s)
+# Lancer les 55 tests unitaires (core 6, platform 3, shell 37, simd 5, vulkan 4)
 cargo test --offline
 
 # Lancer le moteur et simuler le Setup Wizard + Bureau

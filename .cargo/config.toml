@@ -1,0 +1,30 @@
+# Configuration Cargo — Gastinel Grafity (Phase 2)
+
+# --- Compilation 100 % hors-ligne ---------------------------------------
+# Toute dépendance crates.io doit être copiée dans `vendor/` via :
+#   cargo vendor --versioned-dirs vendor
+# puis committée. Aucun accès réseau n'est jamais nécessaire au build.
+[net]
+offline = true
+
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "vendor"
+
+# --- Alpine Linux / musl : libc DYNAMIQUE --------------------------------
+# Par défaut, la cible musl lie statiquement la libc (+crt-static), ce qui
+# rend `dlopen("libvulkan.so.1")` impossible. On force donc le lien dynamique
+# contre /lib/ld-musl-x86_64.so.1 (paquet `musl` présent sur toute Alpine).
+[target.x86_64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+# Toolchain `rust` des paquets Alpine (`apk add rust cargo`) : cible hôte native.
+# Elle est déjà dynamique par défaut ; on l'explicite pour éviter toute régression.
+[target.x86_64-alpine-linux-musl]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+# NB : ne pas compiler la cible musl depuis un hôte glibc (Debian/Ubuntu) :
+# le lien dynamique y résout la glibc (libc.so.6). Construire sous Alpine
+# (voir Dockerfile.ci et tools/ci-check.sh).
